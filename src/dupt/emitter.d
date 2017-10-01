@@ -1,4 +1,4 @@
-module dupt.emmiter;
+module dupt.emitter;
 
 import std.stdio;
 import std.conv;
@@ -16,6 +16,15 @@ class ParseErrorException: Exception {
 
 class Emitter {
     string result;
+
+    void emitArray(T)(in char delimiter, T arg) {
+        foreach (emittable; arg) {
+            result ~= emittable.emit() ~ delimiter ~ ' ';
+        }
+
+        if (arg.length != 0)
+            result = result[0..$-2];
+    }
 
     Emitter emit(E...)(in string format, E args) {
         size_t index = 0;
@@ -53,19 +62,11 @@ class Emitter {
                             continue args_foreach;
                         }
                     } else static if (is(typeof(arg) == Array!IEmittable, IEmittable)) {
-                        void emitArray(in char delimiter) {
-                            foreach (emittable; arg) {
-                                result ~= emittable.emit() ~ delimiter ~ ' ';
-                            }
-
-                            result = result[0..$-2];
-                        }
-
                         if (next == 'A') {
                             next = getNext();
 
                             if (next != '<') {
-                                emitArray(',');
+                                emitArray(',', arg);
                                 continue args_foreach;
                             }
 
@@ -76,7 +77,8 @@ class Emitter {
                                 throw new ParseErrorException("excepted '>'");
                             }
 
-                            emitArray(delimiter);
+                            emitArray(delimiter, arg);
+                            next = getNext();
                             continue args_foreach;
                         }
                     } else {
@@ -97,10 +99,12 @@ class Emitter {
             }
         }
 
+        result ~= input;
         return this;
     }
 
-    Emitter emitln(T...)(in string format, T) {
+    Emitter emitln(T...)(in string format, T args) {
+        emit(format ~ "\n", args);
         return this;
     }
 
@@ -141,20 +145,20 @@ unittest {
     assertEquals("Number is: 1", emitter.build());
 
     emitter.clear();
-    emitter.emit("Emmitable is: $E, Number is: $L", a, 1);
-    assertEquals("Emmitable is: Hello!, Number is: 1", emitter.build());
+    emitter.emit("Emittable is: $E, Number is: $L", a, 1);
+    assertEquals("Emittable is: Hello!, Number is: 1", emitter.build());
 
     emitter.clear();
-    emitter.emit("Escaped emmitable is: $$E", 1, a);
-    assertEquals("Escaped emmitable is: $E", emitter.build());
+    emitter.emit("Escaped emittable is: $$E", 1, a);
+    assertEquals("Escaped emittable is: $E", emitter.build());
 
     emitter.clear();
-    emitter.emit("Escaped emmitable is: $$L", 1, 1);
-    assertEquals("Escaped emmitable is: $L", emitter.build());
+    emitter.emit("Escaped emittable is: $$L", 1, 1);
+    assertEquals("Escaped emittable is: $L", emitter.build());
 
     emitter.clear();
-    emitter.emit("Escaped emmitable is: $$L $L", "Hello world!");
-    assertEquals("Escaped emmitable is: $L Hello world!", emitter.build());
+    emitter.emit("Escaped emittable is: $$L $L", "Hello world!");
+    assertEquals("Escaped emittable is: $L Hello world!", emitter.build());
 
     class B : IEmittable {
         string res;
@@ -175,7 +179,7 @@ unittest {
 
     emitter.clear();
     emitter.emit("Array: $A 1", list);
-    assertEquals("Array: 1, 2, 3", emitter.build());
+    assertEquals("Array: 1, 2, 3 1", emitter.build());
 
     emitter.clear();
     emitter.emit("Array: $A<;>", list);

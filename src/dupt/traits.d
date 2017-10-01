@@ -5,7 +5,7 @@ import std.container.array;
 
 Array!Type getAnnotatedTypes(T)() {
     Array!Type list;
-    auto type = new Type();
-    list.insert(type);
+    // auto type = new Type();
+    // list.insert(type);
     return list;
 }

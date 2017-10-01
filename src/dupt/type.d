@@ -1,71 +1,46 @@
 module dupt.type;
 
-import dupt.emmiter;
-import std.container.array;
-import std.array;
+import dupt.emitter;
 
 class Type : IEmittable {
-    string emit() {
-        return "";
+    enum Which {
+        primitive_,
+        enum_,
+        struct_,
+        union_,
+        class_,
+        array_,
+        pointer_,
     }
-}
 
-class Argument : IEmittable {
-    Type type;
+    bool primitive;
     string name;
-    Array!string modificators;
+    Which which;
 
-    string emit() {
-        return "";
-    }
-}
-
-class Function : IEmittable {
-    Type returnType;
-    Array!Argument arguments;
-    string name;
-    string statements;
-
-    this(in string name, Type returnType, Array!Argument arguments) {
-        this.returnType = returnType;
-        this.arguments = arguments;
+    this(in bool primitive, in string name, in Which which) {
+        this.primitive = primitive;
         this.name = name;
+        this.which = which;
     }
 
     string emit() {
-        auto emitter = new Emitter();
+        return this.name;
+    }
 
-        with (emitter) {
-            emitln("$E $L($A) {", returnType, name, arguments);
-            emitln(statements);
-            emitln("}");
-        }
+    static Type createPrimitiveType(in string name) {
+        return new Type(true, name, Which.primitive_);
+    }
 
-        return emitter.build();
+    static Type createType(in string name, in Which which) {
+        return new Type(false, name, which);
     }
 }
 
-class FunctionBuilder {
-    Type returnType;
-    Array!Argument arguments;
-    string name;
+// class TypeArray : Type {
+// }
 
-    FunctionBuilder setReturnType(Type returnType) {
-        this.returnType = returnType;
-        return this;
-    }
+// class TypePointer : Type {
+// }
 
-    FunctionBuilder addArgument(Argument argument) {
-        this.arguments.insert(argument);
-        return this;
-    }
-
-    FunctionBuilder setName(string name) {
-        this.name = name;
-        return this;
-    }
-
-    Function build() {
-        return new Function(name, returnType, arguments);
-    }
-}
+// class TypeFunction : Type {
+// }
