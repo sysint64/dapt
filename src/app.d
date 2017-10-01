@@ -1,5 +1,8 @@
 import std.stdio;
 import std.getopt;
+import core.sys.posix.stdlib : exit;
+
+enum VERSION = "0.1 Alpha";
 
 void getoptFormatter(Output)(Output output, string text, Option[] opt) {
     import std.algorithm.comparison : min, max;
@@ -27,20 +30,36 @@ void getoptFormatter(Output)(Output output, string text, Option[] opt) {
     }
 }
 
-void main(string[] args) {
-    string file;
+void showError(in string message) {
+    writeln("Error: ", message);
+    writeln("See 'dupt --help'.");
+    exit(-1);
+}
 
+void showError(in Exception e) {
+    showError(e.msg);
+}
+
+void main(string[] args) {
     try {
+        string[] files;
+        string[] processors;
+
         auto helpInformation = getopt(
             args,
             std.getopt.config.required,
-            "file|f", "Hello world", &file
+            "file|f", "Files to prcess", &files,
+            std.getopt.config.required,
+            "processors|p", "Processors", &processors
         );
+
+        writeln(files);
+        writeln(processors);
 
         if (helpInformation.helpWanted) {
             const description =
                 "DUPT - Dlang UDA processor\n" ~
-                "Usage: dupt -f <file> [<args>]\n" ~
+                "Usage: dupt [--version] [--help] -f <file> [<args>]\n" ~
                 "Options:";
 
             getoptFormatter(
@@ -50,7 +69,6 @@ void main(string[] args) {
             );
         }
     } catch (GetOptException e) {
-        writeln("Error: ", e.msg);
-        writeln("type --help for more information");
+        showError(e);
     }
 }

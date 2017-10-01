@@ -1,6 +1,7 @@
-import std.stdio;
+module tests.simple;
 
-enum Tag;
+import std.stdio;
+import tests.simple_uda;
 
 @Tag
 struct A {
@@ -14,8 +15,4 @@ struct B {
     void greet() {
         writeln("Hello world!");
     }
-}
-
-void main() {
-    mixin("@TagGreet");
 }

@@ -1,9 +1,12 @@
 {
-	"name": "dupt",
-	"authors": [
-		"Andrey Kabylin"
-	],
-	"description": "A minimal D application.",
-	"copyright": "Copyright © 2017, Andrey Kabylin",
-	"license": "MIT"
+    "name": "dupt",
+    "authors": [
+	"Andrey Kabylin"
+    ],
+    "description": "A minimal D application.",
+    "copyright": "Copyright © 2017, Andrey Kabylin",
+    "license": "MIT",
+    "dependencies": {
+        "d-unit": "~>0.8.1"
+    }
 }
