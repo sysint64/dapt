@@ -12,4 +12,14 @@ class Processor {
 
     void process() {
     }
+
+    string emit() {
+        string result;
+
+        foreach (emittable; emittables) {
+            result ~= emittable.emit();
+        }
+
+        return result;
+    }
 }
