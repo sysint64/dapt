@@ -12,3 +12,4 @@ dupt-test-*
 *.o
 *.obj
 *.lst
+src/tests/*.test
