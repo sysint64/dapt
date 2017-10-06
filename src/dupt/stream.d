@@ -4,6 +4,12 @@ import std.stdio;
 import std.file;
 import core.stdc.stdio;
 
+class EndOfStreamException : Exception {
+    this() {
+        super("end of strem");
+    }
+}
+
 interface IStream {
     char read();
 
@@ -11,6 +17,30 @@ interface IStream {
     @property int line();
     @property int pos();
     @property bool eof();
+}
+
+class StringStream : IStream {
+    this(in string input) {
+        this.input = input;
+    }
+
+    char read() {
+        ++index;
+
+        if (eof)
+            throw new EndOfStreamException();
+
+        return input[index-1];
+    }
+
+    @property int line() { return 1; }
+    @property int pos() { return cast(int) index; }
+    @property bool eof() { return index >= input.length; }
+    @property char lastChar() { return input[index]; }
+
+private:
+    string input;
+    size_t index = 0;
 }
 
 class FileStream : IStream {
@@ -27,8 +57,12 @@ class FileStream : IStream {
         auto buf = file.rawRead(new char[1]);
         ++p_pos;
 
-        if (file.eof) p_lastChar = char.init;
-        else p_lastChar = buf[0];
+        if (file.eof) {
+            p_lastChar = char.init;
+            throw new EndOfStreamException();
+        } else {
+            p_lastChar = buf[0];
+        }
 
         return p_lastChar;
     }

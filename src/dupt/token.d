@@ -11,11 +11,11 @@ import dupt.lexer : LexerError;
 class Token {
     enum Code {
         none, id, number, string, boolean,
-        struct_, class_, enum_,
+        module_, struct_, class_, enum_,
     };
 
     this(IStream stream) {
-        this.p_stream = p_stream;
+        this.p_stream = stream;
         this.p_line = stream.line;
         this.p_pos = stream.pos;
     }
@@ -51,6 +51,7 @@ class SymbolToken : Token {
     this(IStream stream, in char symbol) {
         super(stream);
         this.p_symbol = symbol;
+        this.p_identifier = to!string(symbol);
     }
 }
 
@@ -96,14 +97,19 @@ private:
     }
 
     void lex() {
-        uint lastIndent;
-
         while (isIdChar()) {
             p_identifier ~= stream.lastChar;
             stream.read();
         }
 
+        import std.stdio;
+        writeln("Identifier: ", p_identifier);
+
         switch (p_identifier) {
+            case "module":
+                p_code = Code.module_;
+                return;
+
             case "struct":
                 p_code = Code.struct_;
                 return;
