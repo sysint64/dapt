@@ -9,6 +9,7 @@ import dapt.stream;
 import dapt.lexer;
 import dapt.token;
 import dapt.type;
+import dapt.emitter;
 
 class ParseError : Exception {
     this(in uint line, in uint pos, in string details) {
@@ -55,6 +56,109 @@ class Scope {
     }
 }
 
+abstract class ASTNode : IEmittable {}
+
+class ASTScope : ASTNode {
+    ASTScope parent = null;
+    Array!ASTNode nodes;
+
+    string emit() {
+        string result = "";
+
+        foreach (node; nodes) {
+            result ~= node.emit();
+        }
+
+        return result;
+    }
+}
+
+class ASTText : ASTNode {
+    private string text;
+
+    this(in string text) {
+        this.text = text;
+    }
+
+    string emit() {
+        return text;
+    }
+}
+
+interface ASTTypeHolder {
+    Type getType();
+}
+
+class ASTForeachMacro : ASTScope, ASTTypeHolder {
+    private Array!Type types;
+    private Type currentType = null;
+    private int indent = 0;
+
+    Type getType() {
+        return currentType;
+    }
+
+    this (in int indent, Array!Type types) {
+        this.types = types;
+        this.indent = indent;
+
+        if (types.length > 0)
+            this.currentType = types.front();
+    }
+
+    override string emit() {
+        string result;
+
+        void emitIndent() {
+            for (int i = 0; i < indent; ++i)
+                result ~= " ";
+        }
+
+        foreach (type; types) {
+            currentType = type;
+
+            result ~= "\n";
+            emitIndent();
+            result ~= "{\n";
+
+            foreach (node; nodes) {
+                result ~= node.emit();
+            }
+
+            result ~= "\n";
+            emitIndent();
+            result ~= "}\n";
+        }
+
+        return result;
+    }
+}
+
+class ASTImportTypeMacro : ASTNode {
+    ASTTypeHolder typeHolder;
+
+    this(ASTTypeHolder typeHolder) {
+        this.typeHolder = typeHolder;
+    }
+
+    string emit() {
+        assert(typeHolder !is null);
+        return typeHolder.getType().generateImport();
+    }
+}
+
+class ASTTypeMacro : ASTNode {
+    ASTTypeHolder typeHolder;
+
+    this(ASTTypeHolder typeHolder) {
+        this.typeHolder = typeHolder;
+    }
+
+    string emit() {
+        return typeHolder.getType().emit();
+    }
+}
+
 class Parser {
     Lexer lexer;
     Scope currentScope = null;
@@ -63,17 +167,44 @@ class Parser {
         this.lexer = lexer;
     }
 
-    void parse() {
+    this(Lexer lexer, Array!Type types) {
+        this.lexer = lexer;
+        this.types = types;
+    }
+
+    void collectTypes() {
         try {
+            lexer.skipWhitspaces = true;
             lexer.nextToken();
 
             while (lexer.currentToken.code != Token.Code.none) {
-                handleTokens();
+                handleCollectTypesTokens();
             }
         } catch (EndOfStreamException e) {
             writeln("End of stream");
             closeScope();
         }
+    }
+
+    string macroTransform() {
+        try {
+            rootASTScope = new ASTScope();
+            currentASTScope = rootASTScope;
+            currentMacroType = types.front();
+
+            lexer.skipWhitspaces = false;
+            lexer.nextToken();
+
+            while (lexer.currentToken.code != Token.Code.none) {
+                handleMacroTransformTokens();
+            }
+        } catch (EndOfStreamException e) {
+            addTextASTToCurrentScope();
+            writeln("End of stream");
+            writeln(rootASTScope.emit());
+        }
+
+        return rootASTScope.emit();
     }
 
     @property int line() { return lexer.currentToken.line; }
@@ -82,7 +213,104 @@ class Parser {
 private:
     public Array!Type types;
 
-    void handleTokens() {
+// Macro transform ---------------------------------------------------------------------------------
+
+    private Type currentMacroType;
+    private string text = "";
+    private ASTScope rootASTScope;
+    private ASTScope currentASTScope;
+
+    void addTextASTToCurrentScope() {
+        currentASTScope.nodes.insert(new ASTText(text));
+        text = "";
+    }
+
+    void handleMacroTransformTokens() {
+        switch (lexer.currentToken.code) {
+            case Token.Code.macroForeachTypes:
+                addTextASTToCurrentScope();
+                parseForeachMacro();
+                break;
+
+            case Token.Code.macroImportType:
+                addTextASTToCurrentScope();
+                parseMacroImportType();
+                break;
+
+            case Token.Code.macroType:
+                addTextASTToCurrentScope();
+                parseMacroType();
+                break;
+
+            case Token.Code.symbol:
+                if (lexer.currentToken.symbol == '{') {
+                    parseScope();
+                } else {
+                    goto default;
+                }
+
+                break;
+
+            default:
+                text ~= lexer.currentToken.identifier;
+                lexer.nextToken();
+        }
+    }
+
+    void parseMacroImportType() {
+        lexer.nextToken();
+
+        if (!cast(ASTTypeHolder) currentASTScope) {
+            throw new ParseError(pos, line, "import macro can be only inside foreach macro");
+        }
+
+        currentASTScope.nodes.insert(new ASTImportTypeMacro(cast(ASTTypeHolder) currentASTScope));
+    }
+
+    void parseMacroType() {
+        lexer.nextToken();
+
+        if (!cast(ASTTypeHolder) currentASTScope)
+            throw new ParseError(pos, line, "type macro can be only inside foreach macro");
+
+        currentASTScope.nodes.insert(new ASTTypeMacro(cast(ASTTypeHolder) currentASTScope));
+    }
+
+    void parseForeachMacro() {
+        auto foreachScope = new ASTForeachMacro(lexer.indent, types);
+        auto lastASTScope = currentASTScope;
+        currentASTScope = foreachScope;
+
+        while (lexer.currentToken.symbol != '{') {
+            lexer.nextToken();
+        }
+
+        lexer.nextToken();
+        while (lexer.currentToken.symbol != '}') {
+            handleMacroTransformTokens();
+        }
+
+        lexer.nextToken();
+        addTextASTToCurrentScope();
+        currentASTScope = lastASTScope;
+        currentASTScope.nodes.insert(foreachScope);
+    }
+
+    void parseScope() {
+        text ~= lexer.currentToken.identifier;
+        lexer.nextToken();
+
+        while (lexer.currentToken.symbol != '}') {
+            handleMacroTransformTokens();
+        }
+
+        text ~= lexer.currentToken.identifier;
+        lexer.nextToken();
+    }
+
+// Collect types -----------------------------------------------------------------------------------
+
+    void handleCollectTypesTokens() {
         switch (lexer.currentToken.code) {
             case Token.Code.module_:
                 writeln("Parsing module");
@@ -139,7 +367,7 @@ private:
         lexer.nextToken();
 
         while (lexer.currentToken.symbol != '}') {
-            handleTokens();
+            handleCollectTypesTokens();
         }
 
         closeScope();
@@ -160,7 +388,7 @@ private:
         lexer.nextToken();
 
         while (lexer.currentToken.symbol != '}') {
-            handleTokens();
+            handleCollectTypesTokens();
         }
 
         closeScope();
@@ -171,7 +399,7 @@ private:
         writeln("Skiping scope");
 
         while (lexer.currentToken.symbol != '}') {
-            handleTokens();
+            handleCollectTypesTokens();
         }
 
         lexer.nextToken();
@@ -232,14 +460,14 @@ unittest {
         // lexer.nextToken();
         // assertEquals(lexer.currentToken.code, Token.Code.module_);
 
-        parser.parse();
+        // parser.collectTypes();
 
-        foreach (Type type; parser.types) {
-            writeln("{");
-            writeln("  ", type.generateImport());
-            writeln("  ", "emit ", type.emit());
-            writeln("}");
-        }
+        // foreach (Type type; parser.types) {
+        //     writeln("{");
+        //     writeln("  ", type.generateImport());
+        //     writeln("  ", "emit ", type.emit());
+        //     writeln("}");
+        // }
         // parser.parseModule();
         // assertEquals("tests.simple", parser.currentScope.name);
     }

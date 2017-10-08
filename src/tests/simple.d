@@ -16,3 +16,9 @@ struct B {
         writeln("Hello world!");
     }
 }
+
+struct C {
+    void greet() {
+        writeln("Hello world!");
+    }
+}

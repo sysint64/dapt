@@ -42,8 +42,25 @@ class Processor {
         outputFile.close();
     }
 
-    Array!Type getAnnotatedTypes(T)() {
+    void collectTypes() {
+        foreach (string fileName; filesToProcessing) {
+            parse(fileName);
+        }
+    }
 
+    void generateProcessor(in string fileName) {
+        const binDirectory = dirName(thisExePath());
+        const fullPath = buildPath(binDirectory, "src", fileName);
+        const outPath = buildPath(binDirectory, "src", fileName[0..$-4]);
+
+        auto outputFile = File(outPath, "w");
+
+        FileStream stream = new FileStream(fullPath);
+        auto lexer = new Lexer(stream);
+        auto parser = new Parser(lexer, types);
+
+        outputFile.write(parser.macroTransform());
+        outputFile.close();
     }
 
     string emit() {
@@ -56,10 +73,14 @@ class Processor {
         return result;
     }
 
+    @property Array!Type types() {
+        return p_types;
+    }
+
 private:
     Array!IEmittable emittables;
     Array!string filesToProcessing;
-    Array!Type types;
+    Array!Type p_types;
 
     void parse(in string fileName) {
         const binDirectory = dirName(thisExePath());
@@ -69,13 +90,19 @@ private:
         auto lexer = new Lexer(stream);
         auto parser = new Parser(lexer);
 
-        parser.parse();
+        parser.collectTypes();
+        p_types ~= parser.types;
     }
 }
+
 
 unittest {
     import tests.simple_processor;
     auto processor = new Processor();
-    // processor.addFileToProcessing("tests/simple.d");
-    // processor.process("tests/simple_generated.d.test", &process);
+    processor.addFileToProcessing("tests/simple.d");
+
+    processor.add(new StringEmittable("module tests.simple_generated;\n\n"));
+    processor.collectTypes();
+    processor.generateProcessor("tests/simple_processor.d.gen");
+    processor.process("tests/simple_generated.d.test", &process);
 }

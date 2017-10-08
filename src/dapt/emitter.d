@@ -9,6 +9,18 @@ interface IEmittable {
     string emit();
 }
 
+class StringEmittable : IEmittable {
+    const string output;
+
+    this(in string output) {
+        this.output = output;
+    }
+
+    string emit() {
+        return output;
+    }
+}
+
 class ParseErrorException: Exception {
     this(in string message) {
         super(message);
@@ -94,11 +106,8 @@ class Emitter {
                                 if (arg.length != 0) {
                                     emitArray(',', arg);
                                 } else { // rm trailing spaces
-                                    next = getNext();
-
-                                    while (next == ' ') {
+                                    while (next == ' ')
                                         next = getNext();
-                                    }
                                 }
                                 continue LArgsForeach;
                             }

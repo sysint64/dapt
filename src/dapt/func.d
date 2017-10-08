@@ -126,7 +126,11 @@ class Function : IEmittable {
         string name;
         Array!Argument arguments;
         Array!Attribute attributes;
-        auto emitter = new Emitter();
+        Emitter emitter;
+
+        this() {
+            emitter = new Emitter();
+        }
 
         Builder setReturnType(Type returnType) {
             this.returnType = returnType;

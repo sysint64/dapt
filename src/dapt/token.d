@@ -12,6 +12,7 @@ class Token {
     enum Code {
         none, symbol, id, number, string, boolean,
         module_, struct_, class_, enum_,
+        macroForeachTypes, macroImportType, macroType
     };
 
     this(IStream stream) {
@@ -135,6 +136,49 @@ private:
 
             default:
                 p_code = Code.id;
+        }
+    }
+}
+
+
+class MacroToken : Token {
+    this(IStream stream) {
+        super(stream);
+        p_code = Code.id;
+        stream.read();
+        lex();
+    }
+
+private:
+    bool isIdChar() {
+        return isAlphaNum(stream.lastChar) || stream.lastChar == '_';
+    }
+
+    void lex() {
+        while (isIdChar()) {
+            p_identifier ~= stream.lastChar;
+            stream.read();
+        }
+
+        import std.stdio;
+        writeln("Macro: ", p_identifier);
+
+        switch (p_identifier) {
+            case "foreachTypes":
+                p_code = Code.macroForeachTypes;
+                return;
+
+            case "importType":
+                p_code = Code.macroImportType;
+                return;
+
+            case "type":
+                p_code = Code.macroType;
+                return;
+
+            default:
+                p_code = Code.id;
+                p_identifier = "#" ~ p_identifier;
         }
     }
 }

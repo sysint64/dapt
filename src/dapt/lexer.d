@@ -17,6 +17,8 @@ class LexerError : Exception {
 
 
 class Lexer {
+    bool skipWhitspaces = true;
+
     this(IStream stream) {
         this.stream = stream;
         stream.read();
@@ -41,11 +43,14 @@ class Lexer {
     }
 
     @property Token currentToken() { return p_currentToken; }
+    @property int indent() { return p_indent; }
 
 private:
     IStream stream;
     bool negative = false;
     Token p_currentToken;
+    int p_indent = 0;
+    bool needIncIndent = true;
 
     Token[] tokenStack;
     size_t stackCursor = 0;
@@ -53,36 +58,53 @@ private:
     Token lexToken() {
         switch (stream.lastChar) {
             case ' ', '\n', '\r':
-                stream.read();
-                return lexToken();
-
-            case '-', '+':
-                negative = stream.lastChar == '-';
-                stream.read();
-
-                if (!isDigit(stream.lastChar)) {
-                    negative = false;
-                    goto default;
+                if (stream.lastChar == ' ') {
+                    ++p_indent;
+                } else if (stream.lastChar == '\n')  {
+                    p_indent = 0;
+                    needIncIndent = true;
                 }
 
-            case 'A': .. case 'Z': case 'a': .. case 'z': case '_':
-                return new IdToken(stream);
-
-            case '\"':
-                return new StringToken(stream);
-
-            case '/':
-                stream.read();
-
-                if (stream.lastChar == '/') {
-                    skipComment();
+                if (skipWhitspaces) {
+                    stream.read();
+                    return lexToken();
                 } else {
                     goto default;
                 }
 
-                return lexToken();
+            // case '-', '+':
+            //     negative = stream.lastChar == '-';
+            //     stream.read();
+
+            //     if (!isDigit(stream.lastChar)) {
+            //         negative = false;
+            //         goto default;
+            //     }
+
+            case 'A': .. case 'Z': case 'a': .. case 'z': case '_':
+                needIncIndent = false;
+                return new IdToken(stream);
+
+            // case '\"':
+                // return new StringToken(stream);
+
+            // case '/':
+            //     stream.read();
+
+            //     if (stream.lastChar == '/') {
+            //         skipComment();
+            //     } else {
+            //         goto default;
+            //     }
+
+            //     return lexToken();
+
+            case '#':
+                needIncIndent = false;
+                return new MacroToken(stream);
 
             default:
+                needIncIndent = false;
                 auto token = new SymbolToken(stream, stream.lastChar);
                 stream.read();
                 return token;

@@ -79,3 +79,32 @@ private:
     int  p_line, p_pos;
     char p_lastChar;
 }
+
+class CTFileStream : IStream {
+    this(in string content) {
+        this.content = content;
+    }
+
+    static CTFileStream createFromFile(string fileName)() {
+        auto stream = new CTFileStream(import(fileName));
+    }
+
+    char read() {
+        p_lastChar = content[index++];
+
+        if (eof)
+            throw new EndOfStreamException();
+
+        return p_lastChar;
+    }
+
+    @property int line() const { return 1; }
+    @property int pos() const { return cast(int) index; }
+    @property bool eof() const { return index >= content.length; }
+    @property char lastChar() const { return p_lastChar; }
+
+private:
+    const string content;
+    size_t index = 0;
+    char p_lastChar;
+}

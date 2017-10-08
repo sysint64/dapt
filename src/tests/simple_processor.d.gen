@@ -1,0 +1,26 @@
+module tests.simple_processor;
+
+import tests.simple_uda;
+import std.traits;
+
+import dapt.type;
+import dapt.func;
+import dapt.processor;
+import dapt.emitter;
+
+void process(Processor processor) {
+    auto funcBuilder = new Function.Builder()
+        .setName("test")
+        .setReturnType(Type.createPrimitiveType("void"));
+
+    #foreachTypes {
+        #importType;
+
+        if (hasUDA!(#type, Tag)) {
+            funcBuilder.addStatement("$L;", "#importType");
+            funcBuilder.addStatement("$L().greet();", "#type");
+        }
+    }
+
+    processor.add(funcBuilder.build());
+}
