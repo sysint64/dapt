@@ -112,7 +112,9 @@ class Function : IEmittable {
 
         with (emitter) {
             emitln("$A< > $E $L($A) {", attributes, returnType, name, arguments);
-            emitln(statements);
+            openScope();
+            emitBlock(statements);
+            closeScope();
             emitln("}");
         }
 
@@ -151,6 +153,31 @@ class Function : IEmittable {
             return this;
         }
 
+        Builder openScope(T...)(in string format, T args) {
+            addStatement(format ~ " {", args);
+            emitter.openScope();
+            return this;
+        }
+
+        Builder closeScope() {
+            emitter.closeScope();
+            emitter.emitln("}");
+            return this;
+        }
+
+        Builder elseScope(in string ifCond = "") {
+            emitter.closeScope();
+
+            if (ifCond == "") {
+                emitter.emitln("} else {");
+            } else {
+                emitter.emitln("} else " ~ ifCond ~ " {");
+            }
+
+            emitter.openScope();
+            return this;
+        }
+
         Function build() {
             return new Function(name, emitter.build(), returnType, arguments, attributes);
         }
@@ -168,6 +195,14 @@ unittest {
         .addAttribute(new Attribute("private"))
         .addAttribute(new Attribute("property"))
         .addStatement("writeln(\"Hello world!\");")
+        .openScope("for (i = 0; i < 10; ++i)")
+        .addStatement("writeln(\"number: \", i);")
+        .openScope("if (a == 0)")
+        .addStatement("writeln(\"this is a first iteration\");")
+        .elseScope("if (a == 1)")
+        .addStatement("writeln(\"this is a second iteration\");")
+        .closeScope()
+        .closeScope()
         .addArgument(Argument.create("a", "int", "in"))
         .addArgument(Argument.create("b", "int", "in"))
         .build();

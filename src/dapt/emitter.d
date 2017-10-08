@@ -1,6 +1,7 @@
 module dapt.emitter;
 
 import std.stdio;
+import std.string;
 import std.conv;
 import std.container.array;
 
@@ -16,14 +17,38 @@ class ParseErrorException: Exception {
 
 class Emitter {
     string result;
+    private int indent = 0;
+    enum spaces = 4;
+    bool autoIndent = true;
 
     void emitArray(T)(in char delimiter, T arg) {
         foreach (emittable; arg) {
-            result ~= emittable.emit() ~ delimiter ~ ' ';
+            if (delimiter == ' ') {
+                result ~= emittable.emit() ~ delimiter;
+            } else {
+                result ~= emittable.emit() ~ delimiter ~ ' ';
+            }
         }
 
         if (arg.length != 0)
             result = result[0..$-2];
+    }
+
+    void openScope() {
+        indent += spaces;
+    }
+
+    void closeScope() {
+        indent -= spaces;
+    }
+
+    void emitIndent() {
+        if (!autoIndent)
+            return;
+
+        for (int i; i < indent; ++i) {
+            result ~= " ";
+        }
     }
 
     Emitter emit(E...)(in string format, E args) {
@@ -40,7 +65,7 @@ class Emitter {
             }
         }
 
-    args_foreach:
+    LArgsForeach:
         foreach (arg; args) {
             while (input.length > 0) {
                 char next = input[0];
@@ -59,15 +84,23 @@ class Emitter {
                         if (next == 'E') {
                             result ~= arg.emit();
                             getNext();
-                            continue args_foreach;
+                            continue LArgsForeach;
                         }
                     } else static if (is(typeof(arg) == Array!IEmittable, IEmittable)) {
                         if (next == 'A') {
                             next = getNext();
 
                             if (next != '<') {
-                                emitArray(',', arg);
-                                continue args_foreach;
+                                if (arg.length != 0) {
+                                    emitArray(',', arg);
+                                } else { // rm trailing spaces
+                                    next = getNext();
+
+                                    while (next == ' ') {
+                                        next = getNext();
+                                    }
+                                }
+                                continue LArgsForeach;
                             }
 
                             const delimiter = getNext();
@@ -77,15 +110,24 @@ class Emitter {
                                 throw new ParseErrorException("excepted '>'");
                             }
 
-                            emitArray(delimiter, arg);
-                            next = getNext();
-                            continue args_foreach;
+                            if (arg.length != 0) {
+                                emitArray(delimiter, arg);
+                                next = getNext();
+                            } else { // rm trailing spaces
+                                next = getNext();
+
+                                while (next == ' ') {
+                                    next = getNext();
+                                }
+                            }
+
+                            continue LArgsForeach;
                         }
                     } else {
                         if (next == 'L') {
                             result ~= to!string(arg);
                             getNext();
-                            continue args_foreach;
+                            continue LArgsForeach;
                         }
 
                         result ~= "$" ~ next;
@@ -104,7 +146,16 @@ class Emitter {
     }
 
     Emitter emitln(T...)(in string format, T args) {
+        emitIndent();
         emit(format ~ "\n", args);
+        return this;
+    }
+
+    Emitter emitBlock(in string block) {
+        foreach (line; splitLines(block)) {
+            emitln(line);
+        }
+
         return this;
     }
 
@@ -129,6 +180,7 @@ unittest {
 
     auto a = new A();
     auto emitter = new Emitter();
+    emitter.autoIndent = false;
     emitter.emit("$E", a);
     assertEquals(a.emit(), emitter.build());
 
