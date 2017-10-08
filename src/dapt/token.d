@@ -81,6 +81,7 @@ private:
 
         p_code = Code.string;
         p_utfstring = to!dstring(p_string);
+        p_identifier = '"' ~ p_string ~ '"';
     }
 }
 
@@ -104,8 +105,8 @@ private:
             stream.read();
         }
 
-        import std.stdio;
-        writeln("Identifier: ", p_identifier);
+        // import std.stdio;
+        // writeln("Identifier: ", p_identifier);
 
         switch (p_identifier) {
             case "module":
@@ -120,19 +121,19 @@ private:
                 p_code = Code.class_;
                 return;
 
-            case "enum":
-                p_code = Code.enum_;
-                return;
+            // case "enum":
+            //     p_code = Code.enum_;
+            //     return;
 
-            case "true":
-                p_code = Code.boolean;
-                p_boolean = true;
-                return;
+            // case "true":
+            //     p_code = Code.boolean;
+            //     p_boolean = true;
+            //     return;
 
-            case "false":
-                p_code = Code.boolean;
-                p_boolean = false;
-                return;
+            // case "false":
+            //     p_code = Code.boolean;
+            //     p_boolean = false;
+            //     return;
 
             default:
                 p_code = Code.id;

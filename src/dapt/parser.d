@@ -175,6 +175,7 @@ class Parser {
     void collectTypes() {
         try {
             lexer.skipWhitspaces = true;
+            lexer.lexStrings = true;
             lexer.nextToken();
 
             while (lexer.currentToken.code != Token.Code.none) {
@@ -182,7 +183,7 @@ class Parser {
             }
         } catch (EndOfStreamException e) {
             writeln("End of stream");
-            closeScope();
+            // closeScope();
         }
     }
 
@@ -193,6 +194,7 @@ class Parser {
             currentMacroType = types.front();
 
             lexer.skipWhitspaces = false;
+            lexer.lexStrings = false;
             lexer.nextToken();
 
             while (lexer.currentToken.code != Token.Code.none) {
@@ -201,7 +203,6 @@ class Parser {
         } catch (EndOfStreamException e) {
             addTextASTToCurrentScope();
             writeln("End of stream");
-            writeln(rootASTScope.emit());
         }
 
         return rootASTScope.emit();
@@ -402,7 +403,7 @@ private:
             handleCollectTypesTokens();
         }
 
-        lexer.nextToken();
+        // lexer.nextToken();
     }
 
     void openScope(in string scopeName) {
@@ -460,7 +461,7 @@ unittest {
         // lexer.nextToken();
         // assertEquals(lexer.currentToken.code, Token.Code.module_);
 
-        // parser.collectTypes();
+        parser.collectTypes();
 
         // foreach (Type type; parser.types) {
         //     writeln("{");

@@ -25,11 +25,10 @@ class StringStream : IStream {
     }
 
     char read() {
-        p_lastChar = input[index++];
-
         if (eof)
             throw new EndOfStreamException();
 
+        p_lastChar = input[index++];
         return p_lastChar;
     }
 

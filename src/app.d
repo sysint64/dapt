@@ -1,6 +1,12 @@
 import std.stdio;
 import std.getopt;
+import std.file;
+import std.path;
+
 import core.sys.posix.stdlib : exit;
+
+import dapt.processor;
+import dapt.type;
 
 enum VERSION = "0.1 Alpha";
 
@@ -32,8 +38,8 @@ void getoptFormatter(Output)(Output output, string text, Option[] opt) {
 
 void showError(in string message) {
     writeln("Error: ", message);
-    writeln("See 'dupt --help'.");
-    exit(-1);
+    writeln("See 'dapt --help'.");
+    exit(int(-1));
 }
 
 void showError(in Exception e) {
@@ -42,24 +48,24 @@ void showError(in Exception e) {
 
 void main(string[] args) {
     try {
-        string[] files;
-        string[] processors;
+        string source;
+        string processors;
 
         auto helpInformation = getopt(
             args,
             std.getopt.config.required,
-            "file|f", "Files to prcess", &files,
+            "source|s", "Source directory with files", &source,
             std.getopt.config.required,
-            "processors|p", "Processors", &processors
+            "processors|p", "Source directory with processors", &processors
         );
 
-        writeln(files);
+        writeln(source);
         writeln(processors);
 
         if (helpInformation.helpWanted) {
             const description =
-                "DUPT - Dlang UDA processor\n" ~
-                "Usage: dupt [--version] [--help] -f <file> [<args>]\n" ~
+                "DAPT - Dlang attribute processor\n" ~
+                "Usage: dapt [--version] [--help] -f <file> [<args>]\n" ~
                 "Options:";
 
             getoptFormatter(
@@ -67,6 +73,24 @@ void main(string[] args) {
                 description,
                 helpInformation.options
             );
+        } else {
+            auto processor = new Processor();
+
+            foreach (string name; dirEntries(source, SpanMode.depth)) {
+                if (extension(name) == ".d") {
+                    writeln(name);
+                    processor.addFileToProcessing(name);
+                }
+            }
+
+            processor.collectTypes();
+
+            foreach (Type type; processor.types) {
+                writeln("{");
+                writeln("  ", type.generateImport());
+                writeln("  ", "emit ", type.emit());
+                writeln("}");
+            }
         }
     } catch (GetOptException e) {
         showError(e);

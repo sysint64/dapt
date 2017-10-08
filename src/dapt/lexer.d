@@ -18,6 +18,7 @@ class LexerError : Exception {
 
 class Lexer {
     bool skipWhitspaces = true;
+    bool lexStrings = false;
 
     this(IStream stream) {
         this.stream = stream;
@@ -85,8 +86,11 @@ private:
                 needIncIndent = false;
                 return new IdToken(stream);
 
-            // case '\"':
-                // return new StringToken(stream);
+            case '\"':
+                if (!lexStrings)
+                    goto default;
+
+                return new StringToken(stream);
 
             // case '/':
             //     stream.read();

@@ -16,33 +16,55 @@ void process(Processor processor) {
     
     {
 
-        import tests.simple : A;
+        import dapt.token : Token;
 
-        if (hasUDA!(A, Tag)) {
-            funcBuilder.addStatement("$L;", "import tests.simple : A");
-            funcBuilder.addStatement("$L().greet();", "A");
+        if (hasUDA!(Token, Tag)) {
+            funcBuilder.addStatement("$L;", "import dapt.token : Token");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "Token", "Hello world!");
         }
     
     }
 
     {
 
-        import tests.simple : B;
+        import dapt.token : SymbolToken;
 
-        if (hasUDA!(B, Tag)) {
-            funcBuilder.addStatement("$L;", "import tests.simple : B");
-            funcBuilder.addStatement("$L().greet();", "B");
+        if (hasUDA!(SymbolToken, Tag)) {
+            funcBuilder.addStatement("$L;", "import dapt.token : SymbolToken");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "SymbolToken", "Hello world!");
         }
     
     }
 
     {
 
-        import tests.simple : C;
+        import dapt.token : StringToken;
 
-        if (hasUDA!(C, Tag)) {
-            funcBuilder.addStatement("$L;", "import tests.simple : C");
-            funcBuilder.addStatement("$L().greet();", "C");
+        if (hasUDA!(StringToken, Tag)) {
+            funcBuilder.addStatement("$L;", "import dapt.token : StringToken");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "StringToken", "Hello world!");
+        }
+    
+    }
+
+    {
+
+        import dapt.token : IdToken;
+
+        if (hasUDA!(IdToken, Tag)) {
+            funcBuilder.addStatement("$L;", "import dapt.token : IdToken");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "IdToken", "Hello world!");
+        }
+    
+    }
+
+    {
+
+        import dapt.token : MacroToken;
+
+        if (hasUDA!(MacroToken, Tag)) {
+            funcBuilder.addStatement("$L;", "import dapt.token : MacroToken");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "MacroToken", "Hello world!");
         }
     
     }

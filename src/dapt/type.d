@@ -29,7 +29,7 @@ class Type : IEmittable {
     string emit() {
         switch (which) {
             case Which.struct_: case Which.class_:
-                if (scope_ is null)
+                if (scope_ is null || scope_.parent is null)
                     return this.name;
 
                 return scope_.toString()[scope_.root.name.length + 1 .. $];
@@ -51,6 +51,9 @@ class Type : IEmittable {
 
         switch (which) {
             case Which.struct_: case Which.class_:
+                if (scope_.parent is null)
+                    return "";
+
                 if (scope_.root != scope_.parent) {
                     auto baseScope = scope_;
                     string baseName;

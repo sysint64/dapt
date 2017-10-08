@@ -18,7 +18,7 @@ void process(Processor processor) {
 
         if (hasUDA!(#type, Tag)) {
             funcBuilder.addStatement("$L;", "#importType");
-            funcBuilder.addStatement("$L().greet();", "#type");
+            funcBuilder.addStatement("$L().greet(\"$L\");", "#type", "Hello world!");
         }
     }
 

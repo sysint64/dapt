@@ -85,6 +85,7 @@ private:
     void parse(in string fileName) {
         const binDirectory = dirName(thisExePath());
         const fullPath = buildPath(binDirectory, "src", fileName);
+        writeln(fullPath, " --------------------------------------");
 
         FileStream stream = new FileStream(fullPath);
         auto lexer = new Lexer(stream);
@@ -92,6 +93,7 @@ private:
 
         parser.collectTypes();
         p_types ~= parser.types;
+        writeln("end");
     }
 }
 
@@ -99,7 +101,8 @@ private:
 unittest {
     import tests.simple_processor;
     auto processor = new Processor();
-    processor.addFileToProcessing("tests/simple.d");
+    // processor.addFileToProcessing("tests/simple.d");
+    processor.addFileToProcessing("dapt/token.d");
 
     processor.add(new StringEmittable("module tests.simple_generated;\n\n"));
     processor.collectTypes();
