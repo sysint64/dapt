@@ -1,11 +1,11 @@
-module dupt.lexer;
+module dapt.lexer;
 
 import std.format : formattedWrite;
 import std.array : appender;
 import std.ascii;
 
-import dupt.stream;
-import dupt.token;
+import dapt.stream;
+import dapt.token;
 
 class LexerError : Exception {
     this(in uint line, in uint pos, in string details) {

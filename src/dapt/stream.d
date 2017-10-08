@@ -1,4 +1,4 @@
-module dupt.stream;
+module dapt.stream;
 
 import std.stdio;
 import std.file;
@@ -25,22 +25,23 @@ class StringStream : IStream {
     }
 
     char read() {
-        ++index;
+        p_lastChar = input[index++];
 
         if (eof)
             throw new EndOfStreamException();
 
-        return input[index-1];
+        return p_lastChar;
     }
 
     @property int line() { return 1; }
     @property int pos() { return cast(int) index; }
     @property bool eof() { return index >= input.length; }
-    @property char lastChar() { return input[index]; }
+    @property char lastChar() { return p_lastChar; }
 
 private:
     string input;
     size_t index = 0;
+    char p_lastChar;
 }
 
 class FileStream : IStream {

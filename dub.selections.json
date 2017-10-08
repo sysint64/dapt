@@ -2,7 +2,6 @@
 	"fileVersion": 1,
 	"versions": {
 		"d-unit": "0.8.1",
-		"ddmd": "0.0.7",
 		"unit-threaded": "0.7.31"
 	}
 }

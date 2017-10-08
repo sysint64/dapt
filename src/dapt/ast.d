@@ -1,4 +1,4 @@
-module dupt.ast;
+module dapt.ast;
 
 import std.container.array;
 

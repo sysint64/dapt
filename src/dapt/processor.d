@@ -1,14 +1,15 @@
-module dupt.processor;
+module dapt.processor;
 
 import std.container.array;
 import std.path;
 import std.file : thisExePath;
 import std.stdio;
 
-import dupt.emitter;
-import dupt.stream;
-import dupt.lexer;
-import dupt.parser;
+import dapt.emitter;
+import dapt.stream;
+import dapt.lexer;
+import dapt.parser;
+import dapt.type;
 
 class Processor {
     void clear() {
@@ -58,6 +59,7 @@ class Processor {
 private:
     Array!IEmittable emittables;
     Array!string filesToProcessing;
+    Array!Type types;
 
     void parse(in string fileName) {
         const binDirectory = dirName(thisExePath());

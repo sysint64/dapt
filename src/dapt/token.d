@@ -1,16 +1,16 @@
-module dupt.token;
+module dapt.token;
 
 import std.ascii;
 import std.uni : toLower;
 import std.algorithm.iteration : map;
 import std.conv;
 
-import dupt.stream;
-import dupt.lexer : LexerError;
+import dapt.stream;
+import dapt.lexer : LexerError;
 
 class Token {
     enum Code {
-        none, id, number, string, boolean,
+        none, symbol, id, number, string, boolean,
         module_, struct_, class_, enum_,
     };
 
@@ -52,6 +52,7 @@ class SymbolToken : Token {
         super(stream);
         this.p_symbol = symbol;
         this.p_identifier = to!string(symbol);
+        this.p_code = Code.symbol;
     }
 }
 

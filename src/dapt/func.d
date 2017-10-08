@@ -1,10 +1,11 @@
-module dupt.func;
+module dapt.func;
 
-import dupt.emitter;
-import dupt.type;
 import std.container.array;
 import std.array;
 import std.algorithm.searching;
+
+import dapt.emitter;
+import dapt.type;
 
 class Argument : IEmittable {
     Type type;

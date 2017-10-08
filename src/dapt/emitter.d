@@ -1,4 +1,4 @@
-module dupt.emitter;
+module dapt.emitter;
 
 import std.stdio;
 import std.conv;

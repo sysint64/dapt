@@ -1,10 +1,10 @@
 module tests.simple_processor;
 
 import tests.simple_uda;
-import dupt.traits;
-import dupt.type;
-import dupt.func;
-import dupt.processor;
+import dapt.traits;
+import dapt.type;
+import dapt.func;
+import dapt.processor;
 
 void process(Processor processor) {
     auto types = getAnnotatedTypes!Tag();

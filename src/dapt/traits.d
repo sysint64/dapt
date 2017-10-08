@@ -1,6 +1,6 @@
-module dupt.traits;
+module dapt.traits;
 
-import dupt.type;
+import dapt.type;
 import std.container.array;
 
 Array!Type getAnnotatedTypes(T)() {
