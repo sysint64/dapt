@@ -11,7 +11,18 @@ import dapt.lexer;
 import dapt.parser;
 import dapt.type;
 
+struct ProcessorInfo {
+    string moduleName;
+    string fileName;
+}
+
 class Processor {
+    string projectPath;
+
+    this() {
+        projectPath = dirName(thisExePath());
+    }
+
     void clear() {
         emittables.clear();
     }
@@ -28,18 +39,21 @@ class Processor {
         filesToProcessing.insert(fileName);
     }
 
-    void process(in string outputFileName, void function(Processor processor) processorHandler) {
-        const binDirectory = dirName(thisExePath());
-        const fullPath = buildPath(binDirectory, "src", outputFileName);
-        auto outputFile = File(fullPath, "w");
+    private File generatedFile;
 
-        foreach (string fileName; filesToProcessing) {
-            parse(fileName);
-        }
+    void openFile(in string fileName) {
+        const fullPath = buildPath(projectPath, "src", fileName);
+        generatedFile = File(fullPath, "w");
+    }
 
+    void closeFile() {
+        generatedFile.write(emit());
+        generatedFile.close();
+        clear();
+    }
+
+    void process(void function(Processor processor) processorHandler) {
         processorHandler(this);
-        outputFile.write(emit());
-        outputFile.close();
     }
 
     void collectTypes() {
@@ -48,10 +62,9 @@ class Processor {
         }
     }
 
-    void generateProcessor(in string fileName) {
-        const binDirectory = dirName(thisExePath());
-        const fullPath = buildPath(binDirectory, "src", fileName);
-        const outPath = buildPath(binDirectory, "src", fileName[0..$-4]);
+    ProcessorInfo generateProcessor(in string fileName) {
+        const fullPath = buildPath(projectPath, "src", fileName);
+        const outPath = buildPath(projectPath, "src", fileName[0..$-4]);
 
         auto outputFile = File(outPath, "w");
 
@@ -59,8 +72,14 @@ class Processor {
         auto lexer = new Lexer(stream);
         auto parser = new Parser(lexer, types);
 
+        // writeln(parser.macroTransform());
         outputFile.write(parser.macroTransform());
         outputFile.close();
+
+        return ProcessorInfo(
+            parser.moduleName,
+            outPath
+        );
     }
 
     string emit() {
@@ -83,8 +102,7 @@ private:
     Array!Type p_types;
 
     void parse(in string fileName) {
-        const binDirectory = dirName(thisExePath());
-        const fullPath = buildPath(binDirectory, "src", fileName);
+        const fullPath = buildPath(projectPath, "src", fileName);
         writeln(fullPath, " --------------------------------------");
 
         FileStream stream = new FileStream(fullPath);

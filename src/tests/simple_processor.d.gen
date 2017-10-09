@@ -9,6 +9,9 @@ import dapt.processor;
 import dapt.emitter;
 
 void process(Processor processor) {
+    processor.openFile("test/simple_generated.d");
+    processor.add(new ModuleEmittable("test.simple_generated"));
+
     auto funcBuilder = new Function.Builder()
         .setName("test")
         .setReturnType(Type.createPrimitiveType("void"));
@@ -23,4 +26,5 @@ void process(Processor processor) {
     }
 
     processor.add(funcBuilder.build());
+    processor.closeFile();
 }

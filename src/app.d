@@ -39,24 +39,58 @@ void getoptFormatter(Output)(Output output, string text, Option[] opt) {
 void showError(in string message) {
     writeln("Error: ", message);
     writeln("See 'dapt --help'.");
-    exit(int(-1));
+    exit(-1);
 }
 
 void showError(in Exception e) {
     showError(e.msg);
 }
 
+import std.container.array;
+import dapt.func;
+import dapt.emitter;
+
+void generateProcessorsEntry(in string sourcePath, ref Array!ProcessorInfo processorsInfo) {
+    auto block = new BlockEmittable();
+    block.add(new StringEmittable("module processors.entry;\n\n"));
+    block.add(new StringEmittable("import dapt.processor;\n\n"));
+
+    auto funcBuilder = new Function.Builder()
+        .setName("daptProcess")
+        .setReturnType(Type.createPrimitiveType("void"))
+        .openScope("version (daptProcessingVersion)");
+
+    foreach (ProcessorInfo info; processorsInfo) {
+        funcBuilder
+            .openScope()
+            .addStatement("import $L : process;", info.moduleName)
+            .addStatement("new Processor().process(&process);")
+            .closeScope();
+    }
+
+    writeln("Res:");
+    funcBuilder.closeScope();
+    block.add(funcBuilder.build());
+    writeln(block.emit());
+
+    auto outFile = File(buildPath(sourcePath, "processors", "entry.d"), "w");
+    outFile.write(block.emit());
+    outFile.close();
+}
+
 void main(string[] args) {
     try {
         string source;
         string processors;
+        string projectRootDirectory = "";
 
         auto helpInformation = getopt(
             args,
             std.getopt.config.required,
             "source|s", "Source directory with files", &source,
             std.getopt.config.required,
-            "processors|p", "Source directory with processors", &processors
+            "processors|p", "Source directory with processors", &processors,
+            "project_root|r", "Project root rirectory", &projectRootDirectory
         );
 
         writeln(source);
@@ -76,21 +110,37 @@ void main(string[] args) {
         } else {
             auto processor = new Processor();
 
+            if (projectRootDirectory != "") {
+                processor.projectPath = projectRootDirectory;
+            }
+
+            writeln("Collect types:");
             foreach (string name; dirEntries(source, SpanMode.depth)) {
                 if (extension(name) == ".d") {
-                    writeln(name);
+                    writeln("  ", name);
                     processor.addFileToProcessing(name);
                 }
             }
 
             processor.collectTypes();
 
+            writeln("Collected types:");
             foreach (Type type; processor.types) {
-                writeln("{");
-                writeln("  ", type.generateImport());
-                writeln("  ", "emit ", type.emit());
-                writeln("}");
+                writeln("  ", type.emit());
             }
+
+            writeln("Generation processors:");
+            Array!ProcessorInfo processorsInfo;
+
+            foreach (string name; dirEntries(source, SpanMode.depth)) {
+                if (extension(name) == ".gen") {
+                    writeln("  ", name);
+                    auto info = processor.generateProcessor(name);
+                    processorsInfo.insert(info);
+                }
+            }
+
+            generateProcessorsEntry(source, processorsInfo);
         }
     } catch (GetOptException e) {
         showError(e);

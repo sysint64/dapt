@@ -163,6 +163,12 @@ class Function : IEmittable {
             return this;
         }
 
+        Builder openScope() {
+            addStatement("{");
+            emitter.openScope();
+            return this;
+        }
+
         Builder closeScope() {
             emitter.closeScope();
             emitter.emitln("}");

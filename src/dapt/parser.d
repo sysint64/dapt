@@ -162,6 +162,7 @@ class ASTTypeMacro : ASTNode {
 class Parser {
     Lexer lexer;
     Scope currentScope = null;
+    string moduleName = "";
 
     this(Lexer lexer) {
         this.lexer = lexer;
@@ -228,6 +229,10 @@ private:
 
     void handleMacroTransformTokens() {
         switch (lexer.currentToken.code) {
+            case Token.Code.module_:
+                parseTransformModule();
+                break;
+
             case Token.Code.macroForeachTypes:
                 addTextASTToCurrentScope();
                 parseForeachMacro();
@@ -255,6 +260,19 @@ private:
             default:
                 text ~= lexer.currentToken.identifier;
                 lexer.nextToken();
+        }
+    }
+
+    void parseTransformModule() {
+        text ~= lexer.currentToken.identifier;
+        lexer.nextToken();
+
+        while (lexer.currentToken.symbol != ';') {
+            if (lexer.currentToken.symbol != ' ')
+                moduleName ~= lexer.currentToken.identifier;
+
+            text ~= lexer.currentToken.identifier;
+            lexer.nextToken();
         }
     }
 
@@ -342,7 +360,6 @@ private:
 
     void parseModule() {
         lexer.nextToken();
-        string moduleName = "";
 
         while (lexer.currentToken.symbol != ';') {
             moduleName ~= lexer.currentToken.identifier;
@@ -397,7 +414,6 @@ private:
 
     void skipScope() {
         lexer.nextToken();
-        writeln("Skiping scope");
 
         while (lexer.currentToken.symbol != '}') {
             handleCollectTypesTokens();

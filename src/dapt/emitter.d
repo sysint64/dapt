@@ -9,6 +9,24 @@ interface IEmittable {
     string emit();
 }
 
+class BlockEmittable : IEmittable {
+    Array!IEmittable items;
+
+    void add(IEmittable item) {
+        items.insert(item);
+    }
+
+    string emit() {
+        string result;
+
+        foreach (item; items) {
+            result ~= item.emit();
+        }
+
+        return result;
+    }
+}
+
 class StringEmittable : IEmittable {
     const string output;
 
@@ -18,6 +36,18 @@ class StringEmittable : IEmittable {
 
     string emit() {
         return output;
+    }
+}
+
+class ModuleEmittable : IEmittable {
+    string moduleName;
+
+    this (in string moduleName) {
+        this.moduleName = moduleName;
+    }
+
+    string emit() {
+        return "module " ~ moduleName ~";\n";
     }
 }
 
