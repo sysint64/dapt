@@ -10,6 +10,7 @@ import dapt.lexer;
 import dapt.token;
 import dapt.type;
 import dapt.emitter;
+import dapt.ast;
 
 class ParseError : Exception {
     this(in uint line, in uint pos, in string details) {
@@ -22,6 +23,8 @@ class ParseError : Exception {
 class Scope {
     Scope parent = null;
     string name;
+    string moduleName;
+    string fileName;
 
     @property Scope root() {
         Scope parentScope = this;
@@ -56,116 +59,18 @@ class Scope {
     }
 }
 
-abstract class ASTNode : IEmittable {}
-
-class ASTScope : ASTNode {
-    ASTScope parent = null;
-    Array!ASTNode nodes;
-
-    string emit() {
-        string result = "";
-
-        foreach (node; nodes) {
-            result ~= node.emit();
-        }
-
-        return result;
-    }
-}
-
-class ASTText : ASTNode {
-    private string text;
-
-    this(in string text) {
-        this.text = text;
-    }
-
-    string emit() {
-        return text;
-    }
-}
-
-interface ASTTypeHolder {
-    Type getType();
-}
-
-class ASTForeachMacro : ASTScope, ASTTypeHolder {
-    private Array!Type types;
-    private Type currentType = null;
-    private int indent = 0;
-
-    Type getType() {
-        return currentType;
-    }
-
-    this (in int indent, Array!Type types) {
-        this.types = types;
-        this.indent = indent;
-
-        if (types.length > 0)
-            this.currentType = types.front();
-    }
-
-    override string emit() {
-        string result;
-
-        void emitIndent() {
-            for (int i = 0; i < indent; ++i)
-                result ~= " ";
-        }
-
-        foreach (type; types) {
-            currentType = type;
-
-            result ~= "\n";
-            emitIndent();
-            result ~= "{\n";
-
-            foreach (node; nodes) {
-                result ~= node.emit();
-            }
-
-            result ~= "\n";
-            emitIndent();
-            result ~= "}\n";
-        }
-
-        return result;
-    }
-}
-
-class ASTImportTypeMacro : ASTNode {
-    ASTTypeHolder typeHolder;
-
-    this(ASTTypeHolder typeHolder) {
-        this.typeHolder = typeHolder;
-    }
-
-    string emit() {
-        assert(typeHolder !is null);
-        return typeHolder.getType().generateImport();
-    }
-}
-
-class ASTTypeMacro : ASTNode {
-    ASTTypeHolder typeHolder;
-
-    this(ASTTypeHolder typeHolder) {
-        this.typeHolder = typeHolder;
-    }
-
-    string emit() {
-        return typeHolder.getType().emit();
-    }
-}
-
 class Parser {
     Lexer lexer;
     Scope currentScope = null;
     string moduleName = "";
+    string fileName = "";
 
     this(Lexer lexer) {
         this.lexer = lexer;
+
+        if (cast(FileStream) lexer.stream) {
+            fileName = (cast(FileStream) lexer.stream).fileName;
+        }
     }
 
     this(Lexer lexer, Array!Type types) {
@@ -248,6 +153,16 @@ private:
                 parseMacroType();
                 break;
 
+            case Token.Code.macroTypeModuleFile:
+                addTextASTToCurrentScope();
+                parseMacroTypeModuleFile();
+                break;
+
+            case Token.Code.macroTypeModuleName:
+                addTextASTToCurrentScope();
+                parseTypeModuleName();
+                break;
+
             case Token.Code.symbol:
                 if (lexer.currentToken.symbol == '{') {
                     parseScope();
@@ -293,6 +208,24 @@ private:
             throw new ParseError(pos, line, "type macro can be only inside foreach macro");
 
         currentASTScope.nodes.insert(new ASTTypeMacro(cast(ASTTypeHolder) currentASTScope));
+    }
+
+    void parseTypeModuleName() {
+        lexer.nextToken();
+
+        if (!cast(ASTTypeHolder) currentASTScope)
+            throw new ParseError(pos, line, "typeModuleName macro can be only inside foreach macro");
+
+        currentASTScope.nodes.insert(new ASTTypeModuleNameMacro(cast(ASTTypeHolder) currentASTScope));
+    }
+
+    void parseMacroTypeModuleFile() {
+        lexer.nextToken();
+
+        if (!cast(ASTTypeHolder) currentASTScope)
+            throw new ParseError(pos, line, "typeModuleFile macro can be only inside foreach macro");
+
+        currentASTScope.nodes.insert(new ASTTypeModuleFileMacro(cast(ASTTypeHolder) currentASTScope));
     }
 
     void parseForeachMacro() {
@@ -426,11 +359,14 @@ private:
         if (currentScope !is null) {
             auto newScope = new Scope(scopeName);
             newScope.parent = currentScope;
+            newScope.moduleName = currentScope.moduleName;
             currentScope = newScope;
         } else {
             currentScope = new Scope(scopeName);
+            currentScope.moduleName = moduleName;
         }
 
+        currentScope.fileName = fileName;
         writeln("open scope: ", currentScope.toString());
     }
 

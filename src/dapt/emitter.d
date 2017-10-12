@@ -65,23 +65,25 @@ class Emitter {
 
     void emitArray(T)(in char delimiter, T arg) {
         foreach (emittable; arg) {
-            if (delimiter == ' ') {
-                result ~= emittable.emit() ~ delimiter;
-            } else {
+            // if (delimiter == ' ') {
+                // result ~= emittable.emit() ~ delimiter;
+            // } else {
                 result ~= emittable.emit() ~ delimiter ~ ' ';
-            }
+            // }
         }
 
         if (arg.length != 0)
             result = result[0..$-2];
     }
 
-    void openScope() {
+    Emitter openScope() {
         indent += spaces;
+        return this;
     }
 
-    void closeScope() {
+    Emitter closeScope() {
         indent -= spaces;
+        return this;
     }
 
     void emitIndent() {
@@ -187,6 +189,12 @@ class Emitter {
     Emitter emitln(T...)(in string format, T args) {
         emitIndent();
         emit(format ~ "\n", args);
+        return this;
+    }
+
+    Emitter emitln(IEmittable emittable) {
+        emitln("");
+        emitBlock(emittable.emit());
         return this;
     }
 

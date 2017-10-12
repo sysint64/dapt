@@ -20,6 +20,8 @@ class Lexer {
     bool skipWhitspaces = true;
     bool lexStrings = false;
 
+    IStream stream;
+
     this(IStream stream) {
         this.stream = stream;
         stream.read();
@@ -47,7 +49,6 @@ class Lexer {
     @property int indent() { return p_indent; }
 
 private:
-    IStream stream;
     bool negative = false;
     Token p_currentToken;
     int p_indent = 0;

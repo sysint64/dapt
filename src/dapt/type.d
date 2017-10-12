@@ -19,6 +19,14 @@ class Type : IEmittable {
     Which which;
     Scope scope_ = null;
 
+    @property string moduleName() {
+        return scope_.moduleName;
+    }
+
+    @property string moduleFileName() {
+        return scope_.fileName;
+    }
+
     this(in bool primitive, in string name, in Which which, Scope scope_ = null) {
         this.primitive = primitive;
         this.name = name;

@@ -35,6 +35,10 @@ class Processor {
         emittables.insert(emittable);
     }
 
+    void addln() {
+        emittables.insert(new StringEmittable("\n"));
+    }
+
     void addFileToProcessing(in string fileName) {
         filesToProcessing.insert(fileName);
     }
@@ -117,13 +121,13 @@ private:
 
 
 unittest {
-    import tests.simple_processor;
-    auto processor = new Processor();
-    // processor.addFileToProcessing("tests/simple.d");
-    processor.addFileToProcessing("dapt/token.d");
+    // import tests.simple_processor;
+    // auto processor = new Processor();
+    // // processor.addFileToProcessing("tests/simple.d");
+    // processor.addFileToProcessing("dapt/token.d");
 
-    processor.add(new StringEmittable("module tests.simple_generated;\n\n"));
-    processor.collectTypes();
-    processor.generateProcessor("tests/simple_processor.d.gen");
-    processor.process("tests/simple_generated.d.test", &process);
+    // processor.add(new StringEmittable("module tests.simple_generated;\n\n"));
+    // processor.collectTypes();
+    // processor.generateProcessor("tests/simple_processor.d.gen");
+    // processor.process("tests/simple_generated.d.test", &process);
 }

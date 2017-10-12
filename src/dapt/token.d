@@ -12,7 +12,10 @@ class Token {
     enum Code {
         none, symbol, id, number, string, boolean,
         module_, struct_, class_, enum_,
-        macroForeachTypes, macroImportType, macroType
+
+        // Macros
+        macroForeachTypes, macroImportType, macroType,
+        macroTypeModuleFile, macroTypeModuleName,
     };
 
     this(IStream stream) {
@@ -175,6 +178,14 @@ private:
 
             case "type":
                 p_code = Code.macroType;
+                return;
+
+            case "typeModuleFile":
+                p_code = Code.macroTypeModuleFile;
+                return;
+
+            case "typeModuleName":
+                p_code = Code.macroTypeModuleName;
                 return;
 
             default:
