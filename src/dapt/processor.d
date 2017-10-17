@@ -2,7 +2,7 @@ module dapt.processor;
 
 import std.container.array;
 import std.path;
-import std.file : thisExePath;
+import std.file;
 import std.stdio;
 
 import dapt.emitter;
@@ -15,6 +15,8 @@ struct ProcessorInfo {
     string moduleName;
     string fileName;
 }
+
+enum FileOpenMode {write, append};
 
 class Processor {
     string projectPath;
@@ -45,9 +47,16 @@ class Processor {
 
     private File generatedFile;
 
-    void openFile(in string fileName) {
+    FileOpenMode openFile(in string fileName) {
         const fullPath = buildPath(projectPath, "src", fileName);
-        generatedFile = File(fullPath, "w");
+
+        if (exists(fullPath)) {
+            generatedFile = File(fullPath, "a");
+            return FileOpenMode.append;
+        } else {
+            generatedFile = File(fullPath, "w");
+            return FileOpenMode.write;
+        }
     }
 
     void closeFile() {

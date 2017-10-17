@@ -1,5 +1,7 @@
 module dapt.eclass;
 
+import std.container.array;
+
 import dapt.emitter;
 import dapt.type;
 import dapt.func;
@@ -7,16 +9,19 @@ import dapt.func;
 class EClass : IEmittable {
     string name;
     string body_;
+    Array!Argument arguments;
 
-    this (in string name, in string body_) {
+    this (in string name, in string body_, Array!Argument arguments) {
         this.name = name;
         this.body_ = body_;
+        this.arguments = arguments;
     }
 
     string emit() {
         auto emitter = new Emitter();
         emitter.emitln("class $L {", name)
             .openScope()
+            .emitln("$A<;\n>", arguments)
             .emitln(body_)
             .closeScope()
             .emitln("}");
@@ -27,6 +32,7 @@ class EClass : IEmittable {
     static class Builder {
         string name;
         Emitter emitter;
+        Array!Argument arguments;
 
         this() {
             emitter = new Emitter();
@@ -43,8 +49,14 @@ class EClass : IEmittable {
             return this;
         }
 
+        Builder addArgument(Argument argument) {
+            this.arguments.insert(argument);
+            return this;
+        }
+
+
         EClass build() {
-            return new EClass(name, emitter.build());
+            return new EClass(name, emitter.build(), arguments);
         }
     }
 }
@@ -74,6 +86,8 @@ unittest {
 
     auto class_ = new EClass.Builder()
         .setName("MyModel")
+        .addArgument(Argument.create("a", "int"))
+        .addArgument(Argument.create("b", "int"))
         .addFunction(sumFunc)
         .addFunction(mulFunc)
         .build();

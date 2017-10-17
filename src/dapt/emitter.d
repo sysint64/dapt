@@ -37,6 +37,11 @@ class StringEmittable : IEmittable {
     string emit() {
         return output;
     }
+
+    static StringEmittable create(T...)(in string format, T args) {
+        auto emitter = new Emitter();
+        return new StringEmittable(emitter.emit(format, args).build());
+    }
 }
 
 class ModuleEmittable : IEmittable {
@@ -63,16 +68,24 @@ class Emitter {
     enum spaces = 4;
     bool autoIndent = true;
 
-    void emitArray(T)(in char delimiter, T arg) {
-        foreach (emittable; arg) {
+    void emitArray(T)(in char delimiter, T args) {
+        emitArray(to!string(delimiter), args);
+    }
+
+    void emitArray(T)(in string delimiter, T args) {
+        foreach (emittable; args) {
             // if (delimiter == ' ') {
                 // result ~= emittable.emit() ~ delimiter;
             // } else {
+            if (delimiter[$-1] == '\n') {
+                result ~= emittable.emit() ~ delimiter;
+                emitIndent();
+            } else {
                 result ~= emittable.emit() ~ delimiter ~ ' ';
-            // }
+            }
         }
 
-        if (arg.length != 0)
+        if (args.length != 0)
             result = result[0..$-2];
     }
 
@@ -144,11 +157,14 @@ class Emitter {
                                 continue LArgsForeach;
                             }
 
-                            const delimiter = getNext();
+                            // const delimiter = getNext();
                             next = getNext();
+                            // string delimiter = to!string(next);
+                            string delimiter = "";
 
-                            if (next != '>') {
-                                throw new ParseErrorException("excepted '>'");
+                            while (next != '>') {
+                                delimiter ~= to!string(next);
+                                next = getNext();
                             }
 
                             if (arg.length != 0) {

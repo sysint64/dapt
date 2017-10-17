@@ -25,11 +25,14 @@ class Argument : IEmittable {
     }
 
     static Argument create(in string name, in string type, in string attribute = "") {
-        return new Argument.Builder()
+        auto builder = new Argument.Builder()
             .setName(name)
-            .setType(Type.createPrimitiveType(type))
-            .addAttribute(new Attribute(attribute))
-            .build();
+            .setType(Type.createPrimitiveType(type));
+
+        if (attribute != "")
+            builder.addAttribute(new Attribute(attribute));
+
+        return builder.build();
     }
 
     static Argument create(in string name, in string type, in Type.Which which,
