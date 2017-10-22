@@ -88,8 +88,6 @@ class Parser {
                 handleCollectTypesTokens();
             }
         } catch (EndOfStreamException e) {
-            writeln("End of stream");
-            // closeScope();
         }
     }
 
@@ -108,7 +106,6 @@ class Parser {
             }
         } catch (EndOfStreamException e) {
             addTextASTToCurrentScope();
-            writeln("End of stream");
         }
 
         return rootASTScope.emit();
@@ -265,7 +262,6 @@ private:
     void handleCollectTypesTokens() {
         switch (lexer.currentToken.code) {
             case Token.Code.module_:
-                writeln("Parsing module");
                 parseModule();
                 break;
 
@@ -299,7 +295,6 @@ private:
             lexer.nextToken();
         }
 
-        writeln(moduleName);
         openScope(moduleName);
     }
 
@@ -367,11 +362,9 @@ private:
         }
 
         currentScope.fileName = fileName;
-        writeln("open scope: ", currentScope.toString());
     }
 
     void closeScope() {
-        writeln("close scope: ", currentScope.toString());
         currentScope = currentScope.parent;
     }
 }

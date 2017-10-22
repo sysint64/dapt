@@ -2,11 +2,15 @@ import std.stdio;
 import std.getopt;
 import std.file;
 import std.path;
+import std.container.array;
 
 import core.sys.posix.stdlib : exit;
 
 import dapt.processor;
 import dapt.type;
+import dapt.func;
+import dapt.emitter;
+
 
 enum VERSION = "0.1 Alpha";
 
@@ -46,11 +50,11 @@ void showError(in Exception e) {
     showError(e.msg);
 }
 
-import std.container.array;
-import dapt.func;
-import dapt.emitter;
+File generatedFilesTxt;
 
-void generateProcessorsEntry(in string sourcePath, ref Array!ProcessorInfo processorsInfo) {
+void generateProcessorsEntry(Processor processor, in string sourcePath,
+    ref Array!ProcessorInfo processorsInfo)
+{
     auto block = new BlockEmittable();
     block.add(new StringEmittable("module processors.entry;\n\n"));
     block.add(new StringEmittable("import dapt.processor;\n\n"));
@@ -64,17 +68,22 @@ void generateProcessorsEntry(in string sourcePath, ref Array!ProcessorInfo proce
         funcBuilder
             .openScope()
             .addStatement("import $L : process;", info.moduleName)
-            .addStatement("new Processor().process(&process);")
+            .addStatement("auto processor = new Processor();")
+            .addStatement("processor.projectPath = \"$L\";", processor.projectPath)
+            .addStatement("processor.process(&process);")
+            .addStatement("processor.generateGeneratedFilesTxt($L);", false)
             .closeScope();
     }
 
-    writeln("Res:");
     funcBuilder.closeScope();
     block.add(funcBuilder.build());
-    writeln(block.emit());
 
-    auto outFile = File(buildPath(sourcePath, "processors", "entry.d"), "w");
+    const entryPath = buildPath(sourcePath, "processors", "entry.d");
+    auto outFile = File(entryPath, "w");
     outFile.write(block.emit());
+    outFile.close();
+
+    generatedFilesTxt.writeln(entryPath);
     outFile.close();
 }
 
@@ -92,9 +101,6 @@ void main(string[] args) {
             "processors|p", "Source directory with processors", &processors,
             "project_root|r", "Project root rirectory", &projectRootDirectory
         );
-
-        writeln(source);
-        writeln(processors);
 
         if (helpInformation.helpWanted) {
             const description =
@@ -114,35 +120,32 @@ void main(string[] args) {
                 processor.projectPath = projectRootDirectory;
             }
 
-            writeln("Collect types:");
+            const generatedFilesPath = buildPath(processor.projectPath, "dapt_generated_files.txt");
+            generatedFilesTxt = File(generatedFilesPath, "w");
+
             foreach (string name; dirEntries(source, SpanMode.depth)) {
                 if (extension(name) == ".d") {
-                    writeln("  ", name);
                     processor.addFileToProcessing(name);
                 }
             }
 
             processor.collectTypes();
-
-            writeln("Collected types:");
-            foreach (Type type; processor.types) {
-                writeln("  ", type.emit());
-            }
-
-            writeln("Generation processors:");
             Array!ProcessorInfo processorsInfo;
 
             foreach (string name; dirEntries(source, SpanMode.depth)) {
                 if (extension(name) == ".gen") {
-                    writeln("  ", name);
                     auto info = processor.generateProcessor(name);
                     processorsInfo.insert(info);
+                    generatedFilesTxt.writeln(info.fileName);
                 }
             }
 
-            generateProcessorsEntry(source, processorsInfo);
+            generateProcessorsEntry(processor, source, processorsInfo);
         }
     } catch (GetOptException e) {
         showError(e);
+    } finally {
+        if (generatedFilesTxt.isOpen)
+            generatedFilesTxt.close();
     }
 }

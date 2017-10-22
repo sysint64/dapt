@@ -108,9 +108,6 @@ private:
             stream.read();
         }
 
-        // import std.stdio;
-        // writeln("Identifier: ", p_identifier);
-
         switch (p_identifier) {
             case "module":
                 p_code = Code.module_;
@@ -163,9 +160,6 @@ private:
             p_identifier ~= stream.lastChar;
             stream.read();
         }
-
-        import std.stdio;
-        writeln("Macro: ", p_identifier);
 
         switch (p_identifier) {
             case "foreachTypes":

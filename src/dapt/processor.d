@@ -21,6 +21,9 @@ enum FileOpenMode {write, append};
 class Processor {
     string projectPath;
 
+    private Array!string p_generatedFiles;
+    @property Array!string generatedFiles() { return p_generatedFiles; }
+
     this() {
         projectPath = dirName(thisExePath());
     }
@@ -54,6 +57,7 @@ class Processor {
             generatedFile = File(fullPath, "a");
             return FileOpenMode.append;
         } else {
+            p_generatedFiles.insert(fullPath);
             generatedFile = File(fullPath, "w");
             return FileOpenMode.write;
         }
@@ -85,7 +89,6 @@ class Processor {
         auto lexer = new Lexer(stream);
         auto parser = new Parser(lexer, types);
 
-        // writeln(parser.macroTransform());
         outputFile.write(parser.macroTransform());
         outputFile.close();
 
@@ -109,6 +112,16 @@ class Processor {
         return p_types;
     }
 
+    void generateGeneratedFilesTxt(in bool openToWrite) {
+        auto outFile = File(buildPath(projectPath, "generated_files.txt"), openToWrite ? "w" : "a");
+
+        foreach (string generateFilePath; generatedFiles) {
+            outFile.writeln(generateFilePath);
+        }
+
+        outFile.close();
+    }
+
 private:
     Array!IEmittable emittables;
     Array!string filesToProcessing;
@@ -116,7 +129,6 @@ private:
 
     void parse(in string fileName) {
         const fullPath = buildPath(projectPath, "src", fileName);
-        writeln(fullPath, " --------------------------------------");
 
         FileStream stream = new FileStream(fullPath);
         auto lexer = new Lexer(stream);
@@ -124,7 +136,6 @@ private:
 
         parser.collectTypes();
         p_types ~= parser.types;
-        writeln("end");
     }
 }
 
